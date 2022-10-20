@@ -5,6 +5,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -41,8 +42,17 @@ public class PersonaController {
 
   @GetMapping("/hateoas")
   public CollectionModel<Person> hateoasFindAll() throws Exception {
-    return CollectionModel.of(this.personUsecase.findAll(),
-            linkTo(methodOn(PersonaController.class).hateoasFindAll()).withSelfRel());
+    final List<Person> collection = this.personUsecase.findAll().stream().map(p -> {
+      final Person person = new Person(p);
+      try {
+        person.add(linkTo(methodOn(PersonaController.class).hateoasFindById(person.getId())).withSelfRel());
+      } catch (final Exception e) {
+        e.printStackTrace();
+      }
+      return person;
+    }).collect(Collectors.toList());
+
+    return CollectionModel.of(collection, linkTo(methodOn(PersonaController.class).hateoasFindAll()).withSelfRel());
   }
 
   @PostMapping("/hateoas")
